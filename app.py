@@ -1,95 +1,88 @@
-from flask import Flask, request, jsonify , make_response#to make HTTP requests and responses and to use data in json format
-from flask_sqlalchemy import SQLAlchemy  # correct import
-from os import environ #to access environment variables
+from flask import Flask, request, jsonify, make_response
+from flask_sqlalchemy import SQLAlchemy
+from os import environ
 
-app = Flask(__name__) #create an instance of the Flask class
+app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = environ.get('DB_URL')
-db = SQLAlchemy(app) #create an instance of the SQLAlchemy class
+db = SQLAlchemy(app)
 
-class User(db.Model): #create a class that inherits from db.Model
-    __tablename__ = 'users' #name of the table in the database
-    
-    id = db.Column(db.Integer, primary_key=True) #primary key of the table
-    name = db.Column(db.String(50), nullable=False) #name of the user,
-    email = db.Column(db.String(120), unique=True, nullable=False) #email of the user, must be unique and cannot be null
-    
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+
     def json(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'email': self.email
-        }      
-    
-#db.create_all() #create the tables in the database
+        return {'id': self.id,'username': self.username, 'email': self.email}
 
-#create a test route
+# create a test route
 @app.route('/test', methods=['GET'])
 def test():
-    return make_response(jsonify({'message': 'API is working!'}), 200)
+  return make_response(jsonify({'message': 'test route'}), 200)
 
-#create a user
-@app.route('/user', methods=['POST'])
+
+# create a user
+@app.route('/users', methods=['POST'])
 def create_user():
-    try:
-        data = request.get_json()  # Get the JSON data from the request
-        new_user = User(name=data['name'], email=data['email'])  # Create a new User instance
-        db.session.add(new_user)  # Add the new user to the session
-        db.session.commit()  # Commit the session to save the user to the database
-        return make_response(jsonify(new_user.json()), 201)  # Return the created user as JSON with a 201 status code
-    
-    except e:
-        return make_response(jsonify({'error': str(e)}), 400)
+  try:
+    data = request.get_json()
+    new_user = User(username=data['username'], email=data['email'])
+    db.session.add(new_user)
+    db.session.commit()
+    return make_response(jsonify({'message': 'user created'}), 201)
+  except Exception as e:
+    return make_response(jsonify({'message': 'error creating user'}), 500)
 
-#get all users
+# get all users
 @app.route('/users', methods=['GET'])
 def get_users():
-    try:
-        users = User.query.all()  # Query all users from the database
-        return make_response(jsonify([user.json() for user in users]), 200)  # Return the list of users as JSON with a 200 status code
-    
-    except e:
-        return make_response(jsonify({'error': str(e)}), 400)
+  try:
+    users = User.query.all()
+    return make_response(jsonify([user.json() for user in users]), 200)
+  except Exception as e:
+    return make_response(jsonify({'message': 'error getting users'}), 500)
 
-#get a user by id
-@app.route('/user/<int:id>', methods=['GET'])
+# get a user by id
+@app.route('/users/<int:id>', methods=['GET'])
 def get_user(id):
-    try:
-        user = User.query.filter_by(id=id).first()  # Get the user by ID or return a 404 error if not found
-        if user:
-            return make_response(jsonify(user.json()), 200)  # Return the user as JSON with a 200 status code
-        return make_response(jsonify({'error': 'User not found'}), 404)  # Return a 404 error if the user is not found
-    except e:
-        return make_response(jsonify({'error': str(e)}), 400)
+  try:
+    user = User.query.filter_by(id=id).first()
+    if user:
+      return make_response(jsonify({'user': user.json()}), 200)
+    return make_response(jsonify({'message': 'user not found'}), 404)
+  except Exception as e:
+    return make_response(jsonify({'message': 'error getting user'}), 500)
 
-#update a user
-@app.route('/user/<int:id>', methods=['PUT'])
+# update a user
+@app.route('/users/<int:id>', methods=['PUT'])
 def update_user(id):
-    try:
-        user = User.query.filter_by(id=id).first()  # Get the user by ID or return a 404 error if not found
-        if user:
-            data = request.get_json()
-            user.name = data['name']  # Update the user's name
-            user.email = data['email']  # Update the user's email
-            db.session.commit()  # Commit the session to save the changes
-            return make_response(jsonify(user.json()), 200)  # Return the updated user as JSON with a 200 status code
-        
-    except e:
-        return make_response(jsonify({'error': str(e)}), 400)
+  try:
+    user = User.query.filter_by(id=id).first()
+    if user:
+      data = request.get_json()
+      user.username = data['username']
+      user.email = data['email']
+      db.session.commit()
+      return make_response(jsonify({'message': 'user updated'}), 200)
+    return make_response(jsonify({'message': 'user not found'}), 404)
+  except Exception as e:
+    return make_response(jsonify({'message': 'error updating user'}), 500)
 
-#delete a user
-@app.route('/user/<int:id>', methods=['DELETE'])
+# delete a user
+@app.route('/users/<int:id>', methods=['DELETE'])
 def delete_user(id):
-    try:
-        user = User.query.filter_by(id=id).first()  # Get the user by ID or return a 404 error if not found
-        if user:
-            db.session.delete(user)  # Delete the user from the session
-            db.session.commit()  # Commit the session to save the changes
-            return make_response(jsonify({'message': 'User deleted successfully'}), 200)  # Return a success message with a 200 status code
-        return make_response(jsonify({'error': 'User not found'}), 404)
-    except e:
-        return make_response(jsonify({'error': str(e)}), 400)
+  try:
+    user = User.query.filter_by(id=id).first()
+    if user:
+      db.session.delete(user)
+      db.session.commit()
+      return make_response(jsonify({'message': 'user deleted'}), 200)
+    return make_response(jsonify({'message': 'user not found'}), 404)
+  except Exception as e:
+    return make_response(jsonify({'message': 'error deleting user'}), 500)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with app.app_context():
-        db.create_all()  # create the tables in the database
+        db.create_all()
     app.run(debug=True)
