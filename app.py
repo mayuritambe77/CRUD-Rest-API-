@@ -55,8 +55,9 @@ def get_users():
 def get_user(id):
     try:
         user = User.query.filter_by(id=id).first()  # Get the user by ID or return a 404 error if not found
-        return make_response(jsonify(user.json()), 200)  # Return the user as JSON with a 200 status code
-    
+        if user:
+            return make_response(jsonify(user.json()), 200)  # Return the user as JSON with a 200 status code
+        return make_response(jsonify({'error': 'User not found'}), 404)  # Return a 404 error if the user is not found
     except e:
         return make_response(jsonify({'error': str(e)}), 400)
 
@@ -64,14 +65,26 @@ def get_user(id):
 @app.route('/user/<int:id>', methods=['PUT'])
 def update_user(id):
     try:
-        data = request.get_json()  # Get the JSON data from the request
         user = User.query.filter_by(id=id).first()  # Get the user by ID or return a 404 error if not found
+        if user:
+            data = request.get_json()
+            user.name = data['name']  # Update the user's name
+            user.email = data['email']  # Update the user's email
+            db.session.commit()  # Commit the session to save the changes
+            return make_response(jsonify(user.json()), 200)  # Return the updated user as JSON with a 200 status code
         
-        user.name = data['name']  # Update the user's name
-        user.email = data['email']  # Update the user's email
-        db.session.commit()  # Commit the session to save the changes
-        
-        return make_response(jsonify(user.json()), 200)  # Return the updated user as JSON with a 200 status code
-    
     except e:
         return make_response(jsonify({'error': str(e)}), 400)
+
+#delete a user
+@app.route('/user/<int:id>', methods=['DELETE'])
+def delete_user(id):
+    try:
+        user = User.query.filter_by(id=id).first()  # Get the user by ID or return a 404 error if not found
+        if user:
+            db.session.delete(user)  # Delete the user from the session
+            db.session.commit()  # Commit the session to save the changes
+            return make_response(jsonify({'message': 'User deleted successfully'}), 200)  # Return a success message with a 200 status code
+        return make_response(jsonify({'error': 'User not found'}), 404)
+    except e:
+        return make_response(jsonify({'error': str(e)}), 400) 
