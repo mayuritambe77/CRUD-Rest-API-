@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify , make_response#to make HTTP requests and responses and to use data in json format
-from flasksqlalchemy import SQLAlchemy #helps to create and manage the database
+from flask_sqlalchemy import SQLAlchemy  # correct import
 from os import environ #to access environment variables
 
 app = Flask(__name__) #create an instance of the Flask class
@@ -20,7 +20,7 @@ class User(db.Model): #create a class that inherits from db.Model
             'email': self.email
         }      
     
-db.create_all() #create the tables in the database
+#db.create_all() #create the tables in the database
 
 #create a test route
 @app.route('/test', methods=['GET'])
@@ -87,4 +87,9 @@ def delete_user(id):
             return make_response(jsonify({'message': 'User deleted successfully'}), 200)  # Return a success message with a 200 status code
         return make_response(jsonify({'error': 'User not found'}), 404)
     except e:
-        return make_response(jsonify({'error': str(e)}), 400) 
+        return make_response(jsonify({'error': str(e)}), 400)
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # create the tables in the database
+    app.run(debug=True)
